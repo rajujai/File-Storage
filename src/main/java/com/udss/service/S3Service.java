@@ -37,7 +37,7 @@ public class S3Service {
                     .map(s3Object -> new FileResponse(s3Object.key(), getBucketUrl(s3Object.key())))
                     .collect(Collectors.toList());
         } catch (Exception e) {
-            throw new FileException("Error occurred while searching files", e);
+            throw new FileException("Error occurred while searching files: " + e);
         }
     }
 
