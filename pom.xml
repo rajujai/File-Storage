@@ -36,6 +36,12 @@
 			<artifactId>s3</artifactId>
 			<version>2.25.61</version>
 		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>kms</artifactId>
+			<version>2.25.64</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>
