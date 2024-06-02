@@ -1,5 +1,6 @@
 package com.udss.controller;
 
+import com.udss.bean.FileResponse;
 import com.udss.service.S3Service;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,7 +24,7 @@ public class FileController {
     }
 
     @GetMapping("/search/{username}")
-    public List<?> searchFiles(@PathVariable final String username, @RequestParam final String term) {
+    public List<FileResponse> searchFiles(@PathVariable final String username, @RequestParam final String term) {
         return s3Service.searchFiles(username, term);
     }
 
