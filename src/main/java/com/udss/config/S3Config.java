@@ -1,6 +1,6 @@
 package com.udss.config;
 
-import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Properties;
 
+@Slf4j
 @Configuration
 public class S3Config {
 
@@ -36,48 +37,50 @@ public class S3Config {
 
     @Bean
     public AwsBasicCredentials awsBasicCredentials() {
-        S3Client s3Client = S3Client.builder()
+        final S3Client s3Client = S3Client.builder()
                 .region(Region.of(region))
                 .build();
 
-        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+        final GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
                 .key(credentialsPath)
                 .build();
 
         try {
-            ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(getObjectRequest);
-            byte[] encryptedCredentials = objectBytes.asByteArray();
-            byte[] decodedCredentials = Base64.getDecoder().decode(encryptedCredentials);
+            final ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(getObjectRequest);
+            final byte[] encryptedCredentials = objectBytes.asByteArray();
+            final byte[] decodedCredentials = Base64.getDecoder().decode(encryptedCredentials);
 
-            KmsClient kmsClient = KmsClient.builder()
+            final KmsClient kmsClient = KmsClient.builder()
                     .region(Region.of(region))
                     .build();
 
-            DecryptRequest decryptRequest = DecryptRequest.builder()
+            final DecryptRequest decryptRequest = DecryptRequest.builder()
                     .ciphertextBlob(SdkBytes.fromByteArray(decodedCredentials))
                     .build();
 
-            DecryptResponse decryptResponse = kmsClient.decrypt(decryptRequest);
-            byte[] decryptedBytes = decryptResponse.plaintext().asByteArray();
-            String decryptedContent = new String(decryptedBytes, StandardCharsets.UTF_8);
+            final DecryptResponse decryptResponse = kmsClient.decrypt(decryptRequest);
+            final byte[] decryptedBytes = decryptResponse.plaintext().asByteArray();
+            final String decryptedContent = new String(decryptedBytes, StandardCharsets.UTF_8);
 
-            Properties properties = new Properties();
+            final Properties properties = new Properties();
             properties.load(new ByteArrayInputStream(decryptedContent.getBytes(StandardCharsets.UTF_8)));
-
+            log.info("AWS credentials acquired successfully");
             return AwsBasicCredentials.create(
                     properties.getProperty("aws.accessKeyId"),
                     properties.getProperty("aws.secretKey")
             );
         } catch (S3Exception e) {
+            log.error("Error retrieving credentials from S3: {}", e.getMessage(), e);
             throw new RuntimeException("Error retrieving credentials from S3: " + e.getMessage(), e);
         } catch (Exception e) {
+            log.error("Error decrypting credentials S3: {}", e.getMessage(), e);
             throw new RuntimeException("Error decrypting credentials: " + e.getMessage(), e);
         }
     }
 
     @Bean
-    public S3Client s3Client(AwsBasicCredentials awsBasicCredentials) {
+    public S3Client s3Client(final AwsBasicCredentials awsBasicCredentials) {
         return S3Client.builder()
                 .region(Region.of(region))
                 .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials))

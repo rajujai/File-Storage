@@ -2,6 +2,7 @@ package com.udss.service;
 
 import com.udss.bean.FileResponse;
 import com.udss.exception.FileException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class S3Service implements IS3Service {
 
@@ -41,6 +43,7 @@ public class S3Service implements IS3Service {
                     .map(FileResponse::new)
                     .collect(Collectors.toList());
         } catch (Exception e) {
+            log.error("Error while searching the files of {}: {}", username, e.getMessage(), e);
             throw new FileException("Error occurred while searching files: " + e);
         }
     }
@@ -56,6 +59,7 @@ public class S3Service implements IS3Service {
         try {
             s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
         } catch (IOException e) {
+            log.error("Error while uploading the file to {}: {}", username, e.getMessage(), e);
             throw new RuntimeException("Failed to upload file", e);
         }
     }
